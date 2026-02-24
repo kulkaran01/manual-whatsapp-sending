@@ -1085,3 +1085,568 @@ section {
         justify-content: center;
     }
 }
+
+/* ─── Tab Navigation ──────────────────────────────────────────────────────── */
+
+.tab-nav {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 16px;
+}
+
+.tab-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 20px;
+    background: transparent;
+    color: var(--gray-600);
+    border: 1.5px solid var(--gray-300);
+    border-radius: var(--radius-md);
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.tab-btn svg {
+    width: 16px;
+    height: 16px;
+}
+
+.tab-btn:hover {
+    background: var(--gray-100);
+    border-color: var(--gray-400);
+}
+
+.tab-btn.active {
+    background: var(--primary-500);
+    color: var(--white);
+    border-color: var(--primary-500);
+}
+
+.tab-pane {
+    display: none;
+}
+
+.tab-pane.active {
+    display: block;
+}
+
+/* ─── Schedule Date Picker ────────────────────────────────────────────────── */
+
+#scheduledDatePicker .flatpickr-calendar.inline {
+    box-shadow: none;
+    border: 1.5px solid var(--gray-300);
+    border-radius: var(--radius-md);
+    margin-top: 4px;
+    width: 100%;
+    max-width: 300px;
+}
+
+.btn-clear-date {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 8px;
+    padding: 6px 14px;
+    background: transparent;
+    color: var(--gray-600);
+    border: 1.5px solid var(--gray-300);
+    border-radius: var(--radius-sm);
+    font-size: 0.82rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.btn-clear-date:hover {
+    background: var(--gray-100);
+    border-color: var(--gray-400);
+}
+
+/* ─── Tasks Tab Header ────────────────────────────────────────────────────── */
+
+.tasks-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+    background: var(--white);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
+    padding: 20px 24px;
+    margin-bottom: 16px;
+}
+
+.tasks-header h2 {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 1.15rem;
+    font-weight: 600;
+    color: var(--gray-800);
+}
+
+.tasks-header h2 svg {
+    width: 22px;
+    height: 22px;
+    color: var(--primary-500);
+}
+
+/* ─── Category Selector ───────────────────────────────────────────────────── */
+
+.category-selector {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 20px;
+}
+
+.category-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    background: var(--white);
+    color: var(--gray-700);
+    border: 1.5px solid var(--gray-300);
+    border-radius: var(--radius-md);
+    font-size: 0.88rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.category-btn svg {
+    width: 15px;
+    height: 15px;
+}
+
+.category-btn:hover {
+    border-color: var(--primary-400);
+    background: var(--primary-50);
+    color: var(--primary-700);
+}
+
+.category-btn.active {
+    background: var(--primary-500);
+    color: var(--white);
+    border-color: var(--primary-500);
+}
+
+.btn-add-category {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 8px 14px;
+    background: transparent;
+    color: var(--primary-600);
+    border: 1.5px dashed var(--primary-400);
+    border-radius: var(--radius-md);
+    font-size: 0.88rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.btn-add-category:hover {
+    background: var(--primary-50);
+}
+
+/* ─── Tasks Calendar ──────────────────────────────────────────────────────── */
+
+.tasks-calendar {
+    background: var(--white);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
+    padding: 20px 24px;
+    margin-bottom: 20px;
+}
+
+.cal-nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+}
+
+.cal-month-label {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--gray-800);
+}
+
+.cal-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 4px;
+}
+
+.cal-day-header {
+    text-align: center;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--gray-500);
+    padding: 6px 0;
+    text-transform: uppercase;
+}
+
+.cal-cell {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 40px;
+    border-radius: var(--radius-sm);
+    font-size: 0.9rem;
+    color: var(--gray-700);
+    cursor: pointer;
+    transition: var(--transition);
+    gap: 2px;
+}
+
+.cal-cell:hover {
+    background: var(--primary-50);
+    color: var(--primary-700);
+}
+
+.cal-cell.empty {
+    cursor: default;
+}
+
+.cal-cell.empty:hover {
+    background: transparent;
+}
+
+.cal-cell.today {
+    font-weight: 700;
+    color: var(--primary-600);
+}
+
+.cal-cell.today > span:first-child {
+    background: var(--primary-100);
+    border-radius: 50%;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.cal-cell.has-events {
+    color: var(--gray-900);
+}
+
+.cal-dot {
+    width: 6px;
+    height: 6px;
+    background: var(--primary-500);
+    border-radius: 50%;
+    display: block;
+}
+
+/* ─── Tasks Nav Buttons ───────────────────────────────────────────────────── */
+
+.btn-tasks-nav {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 7px 12px;
+    background: transparent;
+    color: var(--gray-600);
+    border: 1.5px solid var(--gray-300);
+    border-radius: var(--radius-sm);
+    font-size: 0.85rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.btn-tasks-nav svg {
+    width: 16px;
+    height: 16px;
+}
+
+.btn-tasks-nav:hover {
+    background: var(--gray-100);
+    border-color: var(--gray-400);
+}
+
+/* ─── Tasks Day View Header ───────────────────────────────────────────────── */
+
+.tasks-day-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+    background: var(--white);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
+    padding: 16px 20px;
+    margin-bottom: 16px;
+}
+
+.tasks-day-nav {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.tasks-day-title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--gray-800);
+    min-width: 180px;
+    text-align: center;
+}
+
+/* ─── Tasks Contact List & Rows ───────────────────────────────────────────── */
+
+.tasks-contact-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.tasks-contact-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    background: var(--white);
+    border: 1.5px solid var(--gray-200);
+    border-radius: var(--radius-md);
+    padding: 14px 18px;
+    box-shadow: var(--shadow-sm);
+    transition: var(--transition);
+}
+
+.tasks-contact-row:hover {
+    border-color: var(--primary-300);
+    background: var(--primary-50);
+}
+
+.tasks-row-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.tasks-row-clinic {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--gray-800);
+    margin-bottom: 3px;
+}
+
+.tasks-row-sub {
+    font-size: 0.82rem;
+    color: var(--gray-500);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.tasks-row-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+.btn-call {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 7px 14px;
+    background: var(--success-500);
+    color: var(--white);
+    border: none;
+    border-radius: var(--radius-sm);
+    font-size: 0.83rem;
+    font-weight: 500;
+    cursor: pointer;
+    text-decoration: none;
+    transition: var(--transition);
+}
+
+.btn-call:hover {
+    background: var(--success-600);
+}
+
+.btn-call svg {
+    width: 14px;
+    height: 14px;
+}
+
+.btn-open-contact {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 7px 14px;
+    background: var(--primary-500);
+    color: var(--white);
+    border: none;
+    border-radius: var(--radius-sm);
+    font-size: 0.83rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.btn-open-contact:hover {
+    background: var(--primary-600);
+}
+
+.btn-open-contact svg {
+    width: 14px;
+    height: 14px;
+}
+
+/* ─── Tasks Empty State ───────────────────────────────────────────────────── */
+
+.tasks-empty {
+    text-align: center;
+    padding: 40px 24px;
+    color: var(--gray-500);
+    font-size: 0.9rem;
+    background: var(--white);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
+}
+
+.tasks-empty svg {
+    width: 48px;
+    height: 48px;
+    color: var(--gray-300);
+    margin-bottom: 12px;
+}
+
+.tasks-empty-inline {
+    color: var(--gray-500);
+    font-size: 0.88rem;
+    font-style: italic;
+}
+
+/* ─── Tasks Detail View ───────────────────────────────────────────────────── */
+
+.tasks-detail-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    background: var(--white);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
+    padding: 16px 20px;
+    margin-bottom: 16px;
+}
+
+.tasks-detail-header h3 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--gray-800);
+}
+
+.detail-fields {
+    background: var(--white);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
+    padding: 20px 24px;
+    margin-bottom: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.detail-field {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.detail-field strong {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--gray-500);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.detail-field span {
+    font-size: 0.95rem;
+    color: var(--gray-800);
+    word-break: break-word;
+}
+
+.detail-section {
+    background: var(--white);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
+    padding: 20px 24px;
+    margin-bottom: 16px;
+}
+
+.detail-section h4 {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--gray-700);
+    margin-bottom: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.detail-cat-select {
+    padding: 8px 12px;
+    border: 1.5px solid var(--gray-300);
+    border-radius: var(--radius-sm);
+    font-size: 0.9rem;
+    color: var(--gray-800);
+    background: var(--white);
+    cursor: pointer;
+    transition: var(--transition);
+    min-width: 160px;
+}
+
+.detail-cat-select:focus {
+    outline: none;
+    border-color: var(--primary-400);
+    box-shadow: 0 0 0 3px var(--primary-50);
+}
+
+.msg-log-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 14px;
+    background: var(--gray-50);
+    border: 1px solid var(--gray-200);
+    border-radius: var(--radius-sm);
+    margin-bottom: 8px;
+}
+
+.msg-log-name {
+    font-size: 0.88rem;
+    color: var(--gray-800);
+    font-weight: 500;
+    flex: 1;
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.msg-log-time {
+    font-size: 0.78rem;
+    color: var(--gray-500);
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.tasks-sub-view {
+    /* sub-views inside #tab-tasks */
+}

@@ -1,12 +1,13 @@
 {
+  "globalCategories": [],
   "globalSettings": {
-    "phone": "+919599252018",
+    "phone": "+918901518135",
     "name": "Patient A",
     "owner_name": "",
-    "clinic_name": "Dental Krafts",
-    "clinic_phone": "+919599252018",
-    "clinic_google": "https://maps.app.goo.gl/aWMr7RShpGgdpm647",
-    "clinic_address": "UG-12, 1st Floor, Bestech Central Square Mall, opp. Hong Kong Bazaar Road, Phase 2, Sushant Lok 2, Sector 57, Gurugram, Haryana 122011",
+    "clinic_name": "Vivaan Dental Clinic Braces & Implant Centre ",
+    "clinic_phone": "+918901518135",
+    "clinic_google": "https://maps.app.goo.gl/V4atcrSEBmaizyKG6",
+    "clinic_address": "Shop No. 160, First Floor, Sapphire Shopping Complex, opposite Pantaloons, Sector 90, Gurugram, Meoka, Haryana 122505",
     "notes": ""
   },
   "templates": [
@@ -199,7 +200,8 @@
       "clinic_name": "Dental Krafts",
       "clinic_phone": "+919599252018",
       "clinic_google": "https://maps.app.goo.gl/aWMr7RShpGgdpm647",
-      "clinic_address": "UG-12, 1st Floor, Bestech Central Square Mall, opp. Hong Kong Bazaar Road, Phase 2, Sushant Lok 2, Sector 57, Gurugram, Haryana 122011"
+      "clinic_address": "UG-12, 1st Floor, Bestech Central Square Mall, opp. Hong Kong Bazaar Road, Phase 2, Sushant Lok 2, Sector 57, Gurugram, Haryana 122011",
+      "scheduledDate": null
     },
     {
       "id": "mm07mppmztk7x94iub",
@@ -209,7 +211,14 @@
       "clinic_phone": "+918901518135",
       "clinic_google": "https://maps.app.goo.gl/V4atcrSEBmaizyKG6",
       "clinic_address": "Shop No. 160, First Floor, Sapphire Shopping Complex, opposite Pantaloons, Sector 90, Gurugram, Meoka, Haryana 122505",
-      "owner_name": ""
+      "owner_name": "",
+      "scheduledDate": null,
+      "messageLogs": [
+        {
+          "templateName": "Implant 1 - Day 1 Post-Extraction Check-in",
+          "sentAt": "2026-02-24T19:07:01.119Z"
+        }
+      ]
     }
   ]
 }
