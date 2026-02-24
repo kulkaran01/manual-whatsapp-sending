@@ -1,0 +1,215 @@
+{
+  "globalSettings": {
+    "phone": "+919599252018",
+    "name": "Patient A",
+    "owner_name": "",
+    "clinic_name": "Dental Krafts",
+    "clinic_phone": "+919599252018",
+    "clinic_google": "https://maps.app.goo.gl/aWMr7RShpGgdpm647",
+    "clinic_address": "UG-12, 1st Floor, Bestech Central Square Mall, opp. Hong Kong Bazaar Road, Phase 2, Sushant Lok 2, Sector 57, Gurugram, Haryana 122011",
+    "notes": ""
+  },
+  "templates": [
+    {
+      "id": "implant-msg-1",
+      "name": "Implant 1 - Day 1 Post-Extraction Check-in",
+      "message": "Hi {name}, this is {clinic_name} checking on you 😊\nYour extraction area should feel better today.\n\nVery important: the empty space has now started healing, but the bone also starts shrinking from today.\n\nThat is why implants are planned soon after removal — waiting makes placement harder and sometimes impossible later.\n\nIf you feel unusual swelling or pain you can call us at {clinic_phone}.\n\nWhen you feel ready, we will schedule the implant planning visit.",
+      "files": []
+    },
+    {
+      "id": "implant-msg-2",
+      "name": "Implant 2 - Day 3 Teeth Shifting Warning",
+      "message": "Hi {name} 😊\nJust a reminder from {clinic_name} — most patients think the job is finished after removal.\n\nActually, extraction is only step 1.\n\nWithout a tooth, the nearby teeth slowly tilt and chewing pressure shifts to other side. This later causes more treatment than just one implant.\n\nIf you want us to check healing and plan the tooth replacement, call {clinic_phone}.\n\nWe keep short review slots for recent patients.",
+      "files": []
+    },
+    {
+      "id": "implant-msg-3",
+      "name": "Implant 3 - Day 5 Bone Loss Video",
+      "message": "Hi {name} 😊\nThis short video explains what happens after removal if a new tooth is not placed.\n\nMany people notice cheek sinking or older facial look after some months — this is bone loss, not ageing.\n\nImplant timing prevents that.\n\nIf you'd like us to secure the bone early, call {clinic_phone}. We will guide you.",
+      "files": [
+        {
+          "label": "Video - Bone Loss Explanation",
+          "path": "C:\\Users\\ACER\\Videos\\final\\cosmetics\\Extraction dONE , Implant\\wedfef.mp4",
+          "filename": "wedfef.mp4"
+        }
+      ]
+    },
+    {
+      "id": "implant-msg-4",
+      "name": "Implant 4 - Day 7 Before/After Bone Shrinkage",
+      "message": "Hi {name} 🙂\nHere is a real example of before and after bone shrinkage.\n\nOnce the bone collapses, treatment becomes longer and more expensive.\n\nRight now your healing stage is the ideal window.\n\nYou can reach {clinic_name} at {clinic_phone} to reserve a planning visit at {clinic_address}.",
+      "files": [
+        {
+          "label": "Image - Bone Loss Before/After",
+          "path": "C:\\Users\\ACER\\Videos\\final\\cosmetics\\Extraction dONE , Implant\\facial-collapse-after-tooth-bone-lose-before-after.jpg",
+          "filename": "facial-collapse-after-tooth-bone-lose-before-after.jpg"
+        }
+      ]
+    },
+    {
+      "id": "implant-msg-5",
+      "name": "Implant 5 - Day 10 Domino Effect Video",
+      "message": "Hi {name} 😊\nThis 3D clip shows the domino effect after one missing tooth.\n\nThe opposite tooth starts coming down, neighbours move, and bite changes.\n\nAt that stage people need multiple treatments instead of one implant.\n\nWe want to help you avoid that.\nCall {clinic_phone} and we will check if your bone is still in the simple stage.",
+      "files": [
+        {
+          "label": "Video - Domino Effect",
+          "path": "C:\\Users\\ACER\\Videos\\final\\cosmetics\\Extraction dONE , Implant\\domino effect.mp4",
+          "filename": "domino effect.mp4"
+        }
+      ]
+    },
+    {
+      "id": "implant-msg-6",
+      "name": "Implant 6 - Day 14 Final Window CTA",
+      "message": "Hi {name} 🙂\nIt has been two weeks since your extraction at {clinic_name}.\n\nThis is usually the last ideal period for straightforward implant placement.\n\nAfter this, grafting or additional procedures may be needed.\n\nIf replacing the tooth is your plan, please contact us today at {clinic_phone}. We will prioritise your case.\n\nWe are here to help you restore chewing and appearance comfortably.",
+      "files": []
+    },
+    {
+      "id": "rct-msg-1",
+      "name": "RCT 1 - Education (Why It Feels Not Serious)",
+      "message": "Hi {name},\nDuring your consultation at {clinic_name}, we noticed that your tooth **does not hurt much right now**, but it **reacts to hot/cold** 🦷\nThis usually means the nerve inside the tooth is **already infected**, even if pain is mild or ignored.\n\nMost patients delay treatment at this stage because daily pain is not present 🙂\nBut this stage is actually the **best time to treat the tooth safely**.",
+      "files": [
+        {
+          "label": "Video - Timeline 1",
+          "path": "C:\\Users\\ACER\\Videos\\final\\cosmetics\\Timeline 1.mp4",
+          "filename": "Timeline 1.mp4"
+        }
+      ]
+    },
+    {
+      "id": "rct-msg-2",
+      "name": "RCT 2 - Consequences (What Happens If Ignored)",
+      "message": "When RCT is delayed, the infection **does not stop on its own** ❌\nIt slowly spreads deeper, which can lead to:\n• Sudden severe pain\n• Swelling or pus\n• Tooth fracture\n• Eventual tooth loss 😟\n\nEarly treatment = simple procedure\nLate treatment = complex, painful, and expensive",
+      "files": [
+        {
+          "label": "Video - Timeline 2",
+          "path": "C:\\Users\\ACER\\Videos\\final\\cosmetics\\RCT\\Timeline 2.mp4",
+          "filename": "Timeline 2.mp4"
+        }
+      ]
+    },
+    {
+      "id": "rct-msg-3",
+      "name": "RCT 3 - Procedure Reassurance (Fear Reduction)",
+      "message": "Many patients worry that RCT is painful — but modern RCT is actually **pain-relieving**, not pain-causing 😌\nThe infected nerve is removed, the tooth is cleaned, and pain stops.\n\nHere's a glimpse of how precision tools and light curing help seal and protect the tooth safely 🛠️",
+      "files": [
+        {
+          "label": "Image - Light Cure",
+          "path": "C:\\Users\\ACER\\Videos\\final\\cosmetics\\RCT\\light-cure-1.jpg",
+          "filename": "light-cure-1.jpg"
+        }
+      ]
+    },
+    {
+      "id": "rct-msg-4",
+      "name": "RCT 4 - Value & Long-Term Result",
+      "message": "After RCT, placing a crown is important 👑\nIt protects the treated tooth and restores full chewing strength.\n\nWithout a crown, the tooth becomes weak and may crack later ⚠️\nWith a crown, the tooth can last **many years like a natural tooth**.",
+      "files": [
+        {
+          "label": "Image - Crown Importance",
+          "path": "C:\\Users\\ACER\\Videos\\final\\cosmetics\\RCT\\importance-of-crown-after-rct.jpg",
+          "filename": "importance-of-crown-after-rct.jpg"
+        }
+      ]
+    },
+    {
+      "id": "rct-msg-5",
+      "name": "RCT 5 - Soft CTA (Call to Action)",
+      "message": "Since your tooth is already showing early nerve involvement, **this is the ideal time to save it** 🦷✨\nRCT done now is simpler, faster, and prevents future emergencies.\n\nYou can easily reconnect with us below 👇\n\n📞 Call Doctor: {clinic_phone}\n📍 Clinic Location: {clinic_address}\n⭐ Google Reviews: {clinic_google}",
+      "files": []
+    }
+  ],
+  "savedContacts": [
+    {
+      "id": "ml8y06tjnzcw8tqcud",
+      "phone": "+919018409385",
+      "name": "Raina ",
+      "clinic_name": "Raina multi speciality dental care",
+      "clinic_phone": "09018409385",
+      "clinic_google": "https://maps.app.goo.gl/CWqmcyBkxdC9bKQn6",
+      "clinic_address": "Talab TILLO CHOWK CAMP ROAD,shop number 2 , OPPOSIT NEW ASHOKA ACADEMY, Jammu, Jammu and Kashmir 180004"
+    },
+    {
+      "id": "ml8z8gbk3fdlfwc6dzd",
+      "phone": "+917006672655",
+      "name": "Gautam ",
+      "clinic_name": "Dr Gautam Sharma Dental Clinic",
+      "clinic_phone": "07006672655",
+      "clinic_google": "https://maps.app.goo.gl/UqdCGqqJp2oiaVPh7",
+      "clinic_address": "46-C, near Govt.Hospital, adjacent to Dr Amandeep Kaur's Gynaecology Clinic, Sector- B/C, Gandhi Nagar, Jammu, Jammu and Kashmir 180004"
+    },
+    {
+      "id": "ml8zysoc1yl735rtwsv",
+      "phone": "+919596595142",
+      "name": "Sumit",
+      "clinic_name": "Esthetic Edge Multispeciality Dental Clinic ",
+      "clinic_phone": "09596595142",
+      "clinic_google": "https://maps.app.goo.gl/Lu4XtBQ3T2xD3FYL9",
+      "clinic_address": "434A, near Laxmi Narayan Temple, Gandhi Nagar, Jammu, Jammu and Kashmir 180004"
+    },
+    {
+      "id": "mla76qqxnalpgy1bj4",
+      "phone": "+917780804698",
+      "name": "Sudan ",
+      "clinic_name": "Sudan dental clinic ",
+      "clinic_phone": "07780804698",
+      "clinic_google": "https://maps.app.goo.gl/FLqQvzrsXcEUST9s8",
+      "clinic_address": "442-a, Gandhi Nagar, Jammu, Jammu and Kashmir 180004"
+    },
+    {
+      "id": "mlafpyv3ayu8ecaffki",
+      "phone": "+919070080427",
+      "name": "Shatakshi ",
+      "clinic_name": "Town Dental",
+      "clinic_phone": "+917889498902",
+      "clinic_google": "https://maps.app.goo.gl/VKzsPqdThhAWEeNx9",
+      "clinic_address": "Plot No. 55, Daya Bhawan, Lane 1, Sector -7, Guru Nanak Nagar, Jammu, Jammu and Kashmir 180004"
+    },
+    {
+      "id": "mlaq0h1ks2w1azuwb",
+      "phone": "+917006619426",
+      "name": "Pranav",
+      "clinic_name": "Dr. Pranav's Dental Spa",
+      "clinic_phone": "07006619426",
+      "clinic_google": "https://maps.app.goo.gl/iXuTfJJ34DySnmVT9",
+      "clinic_address": "67, Moti Bazar Road, Pakki Dhaki, Jammu, Jammu and Kashmir 180001"
+    },
+    {
+      "id": "mlaqlwcjh56bzsyl9i",
+      "phone": "+918713993333",
+      "name": "Neha",
+      "clinic_name": "Smile Craft Multispeciality Dental Clinic ",
+      "clinic_phone": "+918713993333",
+      "clinic_google": "https://maps.app.goo.gl/yfb5i5zefYp18ZZdA",
+      "clinic_address": "Starmeds , Sector 4, Channi Himat, Jammu, Jammu and Kashmir 180015"
+    },
+    {
+      "id": "mltf1n4mov53wcv7eka",
+      "phone": "+919871631066",
+      "name": "Pankaj",
+      "clinic_name": "Center for Dental Implants & Esthetics",
+      "clinic_phone": "9871631066",
+      "clinic_google": "https://maps.app.goo.gl/FKizmFqbced7oq659",
+      "clinic_address": "Close to Artemis Hospital, 166, Ambedkar Chowk, Sector 51, Gurugram, Haryana 122018"
+    },
+    {
+      "id": "mm074zozavh01vjk1s4",
+      "phone": "+919599252018",
+      "name": "Patient A",
+      "clinic_name": "Dental Krafts",
+      "clinic_phone": "+919599252018",
+      "clinic_google": "https://maps.app.goo.gl/aWMr7RShpGgdpm647",
+      "clinic_address": "UG-12, 1st Floor, Bestech Central Square Mall, opp. Hong Kong Bazaar Road, Phase 2, Sushant Lok 2, Sector 57, Gurugram, Haryana 122011"
+    },
+    {
+      "id": "mm07mppmztk7x94iub",
+      "phone": "+918901518135",
+      "name": "Patient A",
+      "clinic_name": "Vivaan Dental Clinic Braces & Implant Centre ",
+      "clinic_phone": "+918901518135",
+      "clinic_google": "https://maps.app.goo.gl/V4atcrSEBmaizyKG6",
+      "clinic_address": "Shop No. 160, First Floor, Sapphire Shopping Complex, opposite Pantaloons, Sector 90, Gurugram, Meoka, Haryana 122505",
+      "owner_name": ""
+    }
+  ]
+}

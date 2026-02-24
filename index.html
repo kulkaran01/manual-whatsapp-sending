@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WhatsApp Template Messenger</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <div class="logo">
+                <svg class="logo-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
+                </svg>
+                <h1>WhatsApp Templates</h1>
+            </div>
+            <p class="subtitle">Send personalized messages with reusable templates</p>
+        </header>
+
+        <!-- Saved Contacts Section -->
+        <section class="contacts-section">
+            <div class="section-header">
+                <h2>
+                    <svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                        <circle cx="9" cy="7" r="4"/>
+                        <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                        <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                    </svg>
+                    Saved Contacts
+                </h2>
+            </div>
+
+            <div class="contacts-search-row">
+                <div class="search-box">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="11" cy="11" r="8"/>
+                        <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                    </svg>
+                    <input type="text" id="contactSearch" placeholder="Search by name, phone, or clinic...">
+                </div>
+            </div>
+
+            <div class="contacts-list" id="contactsList">
+                <!-- Saved contacts will be rendered here -->
+            </div>
+        </section>
+
+        <!-- Current Contact Section -->
+        <section class="settings-section">
+            <div class="section-header">
+                <h2>
+                    <svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                        <circle cx="12" cy="7" r="4"/>
+                    </svg>
+                    Current Contact
+                </h2>
+                <div class="settings-actions">
+                    <button class="btn-save-contact" id="saveContactBtn">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+                            <polyline points="17 21 17 13 7 13 7 21"/>
+                            <polyline points="7 3 7 8 15 8"/>
+                        </svg>
+                        Save Contact
+                    </button>
+                    <button class="btn-clear-form" id="clearFormBtn">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M3 6h18"/>
+                            <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                        </svg>
+                        Clear
+                    </button>
+                </div>
+            </div>
+
+            <div class="settings-grid">
+                <div class="input-group phone-group">
+                    <label for="phone">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
+                        </svg>
+                        Recipient Phone
+                    </label>
+                    <input type="text" id="phone" placeholder="919876543210 (with country code, no +)">
+                </div>
+
+                <div class="input-group">
+                    <label for="name">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                            <circle cx="12" cy="7" r="4"/>
+                        </svg>
+                        Patient Name
+                    </label>
+                    <input type="text" id="name" placeholder="John Doe">
+                </div>
+
+                <div class="input-group">
+                    <label for="owner_name">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                            <circle cx="12" cy="7" r="4"/>
+                            <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                        </svg>
+                        Owner Name
+                    </label>
+                    <input type="text" id="owner_name" placeholder="Dr. Sharma">
+                </div>
+
+                <div class="input-group">
+                    <label for="clinic_name">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                            <polyline points="9 22 9 12 15 12 15 22"/>
+                        </svg>
+                        Clinic Name
+                    </label>
+                    <input type="text" id="clinic_name" placeholder="Dental Care Clinic">
+                </div>
+
+                <div class="input-group">
+                    <label for="clinic_phone">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
+                        </svg>
+                        Clinic Phone
+                    </label>
+                    <input type="text" id="clinic_phone" placeholder="+91-123-456-7890">
+                </div>
+
+                <div class="input-group full-width">
+                    <label for="clinic_google">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="10" r="3"/>
+                            <path d="M12 21.7C17.3 17 20 13 20 10a8 8 0 1 0-16 0c0 3 2.7 6.9 8 11.7z"/>
+                        </svg>
+                        Google Maps Link
+                    </label>
+                    <input type="text" id="clinic_google" placeholder="https://g.co/...">
+                </div>
+
+                <div class="input-group full-width">
+                    <label for="clinic_address">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+                            <circle cx="12" cy="10" r="3"/>
+                        </svg>
+                        Clinic Address
+                    </label>
+                    <input type="text" id="clinic_address" placeholder="123 Main Street, City">
+                </div>
+
+                <div class="input-group full-width">
+                    <label for="notes">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                            <polyline points="14 2 14 8 20 8"/>
+                            <line x1="16" y1="13" x2="8" y2="13"/>
+                            <line x1="16" y1="17" x2="8" y2="17"/>
+                        </svg>
+                        Notes
+                    </label>
+                    <textarea id="notes" rows="3" placeholder="Internal notes about this contact..."></textarea>
+                </div>
+            </div>
+        </section>
+
+        <!-- Templates Section -->
+        <section class="templates-section">
+            <div class="section-header">
+                <h2>
+                    <svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                        <polyline points="14 2 14 8 20 8"/>
+                        <line x1="16" y1="13" x2="8" y2="13"/>
+                        <line x1="16" y1="17" x2="8" y2="17"/>
+                        <polyline points="10 9 9 9 8 9"/>
+                    </svg>
+                    Message Templates
+                </h2>
+                <div class="template-actions-header">
+                    <button class="btn-reload" id="reloadTemplatesBtn" title="Reload default templates">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="23 4 23 10 17 10"/>
+                            <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+                        </svg>
+                        Reload
+                    </button>
+                    <button class="btn-add" id="addTemplateBtn">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="12" y1="5" x2="12" y2="19"/>
+                            <line x1="5" y1="12" x2="19" y2="12"/>
+                        </svg>
+                        Add Template
+                    </button>
+                </div>
+            </div>
+
+            <div class="templates-grid" id="templatesGrid">
+                <!-- Templates will be rendered here -->
+            </div>
+        </section>
+
+        <!-- Template Editor Modal -->
+        <div class="modal-overlay" id="modalOverlay">
+            <div class="modal" id="templateModal">
+                <div class="modal-header">
+                    <h3 id="modalTitle">New Template</h3>
+                    <button class="btn-close" id="closeModal">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="18" y1="6" x2="6" y2="18"/>
+                            <line x1="6" y1="6" x2="18" y2="18"/>
+                        </svg>
+                    </button>
+                </div>
+
+                <div class="modal-body">
+                    <div class="input-group">
+                        <label for="templateName">Template Name</label>
+                        <input type="text" id="templateName" placeholder="e.g., Appointment Reminder">
+                    </div>
+
+                    <div class="input-group">
+                        <label for="templateMessage">Message</label>
+                        <div class="variable-chips">
+                            <span class="variable-chip" data-var="{name}">{name}</span>
+                            <span class="variable-chip" data-var="{owner_name}">{owner_name}</span>
+                            <span class="variable-chip" data-var="{clinic_name}">{clinic_name}</span>
+                            <span class="variable-chip" data-var="{clinic_phone}">{clinic_phone}</span>
+                            <span class="variable-chip" data-var="{clinic_google}">{clinic_google}</span>
+                            <span class="variable-chip" data-var="{clinic_address}">{clinic_address}</span>
+                        </div>
+                        <textarea id="templateMessage" rows="6" placeholder="Hi {name}, your appointment at {clinic_name} is tomorrow..."></textarea>
+                    </div>
+
+                    <div class="files-section">
+                        <div class="files-header">
+                            <label>Attached Files</label>
+                            <button class="btn-add-file" id="addFileBtn" type="button">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <line x1="12" y1="5" x2="12" y2="19"/>
+                                    <line x1="5" y1="12" x2="19" y2="12"/>
+                                </svg>
+                                Add File
+                            </button>
+                        </div>
+                        <p class="files-hint">Paste Windows path (Ctrl+Shift+C in Explorer)</p>
+                        <div class="files-list" id="filesList">
+                            <!-- File entries will be added here -->
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button class="btn-delete" id="deleteTemplate" style="display: none;">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="3 6 5 6 21 6"/>
+                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                        </svg>
+                        Delete
+                    </button>
+                    <div class="modal-actions">
+                        <button class="btn-cancel" id="cancelTemplate">Cancel</button>
+                        <button class="btn-save" id="saveTemplate">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+                                <polyline points="17 21 17 13 7 13 7 21"/>
+                                <polyline points="7 3 7 8 15 8"/>
+                            </svg>
+                            Save Template
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Toast Notification -->
+        <div class="toast" id="toast">
+            <svg class="toast-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="20 6 9 17 4 12"/>
+            </svg>
+            <span id="toastMessage">Copied to clipboard!</span>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
