@@ -1,5 +1,32 @@
 // WhatsApp Template Messenger - Application Logic
 
+// ─── Dark Theme ─────────────────────────────────────────────────────────────
+(function () {
+    const STORAGE_KEY = 'df-theme';
+    const html = document.documentElement;
+
+    function applyTheme(dark) {
+        html.setAttribute('data-theme', dark ? 'dark' : 'light');
+    }
+
+    // Apply immediately to avoid flash
+    const saved = localStorage.getItem(STORAGE_KEY);
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    applyTheme(saved ? saved === 'dark' : prefersDark);
+
+    document.addEventListener('DOMContentLoaded', function () {
+        const btn = document.getElementById('themeToggle');
+        if (!btn) return;
+
+        btn.addEventListener('click', function () {
+            const isDark = html.getAttribute('data-theme') === 'dark';
+            applyTheme(!isDark);
+            localStorage.setItem(STORAGE_KEY, !isDark ? 'dark' : 'light');
+        });
+    });
+})();
+// ────────────────────────────────────────────────────────────────────────────
+
 // DOM Elements
 const elements = {
     // Global settings inputs
@@ -11,6 +38,7 @@ const elements = {
     clinic_google: document.getElementById('clinic_google'),
     clinic_address: document.getElementById('clinic_address'),
     notes: document.getElementById('notes'),
+    follow_up_notes: document.getElementById('follow_up_notes'),
 
     // Contacts
     contactSearch: document.getElementById('contactSearch'),
@@ -46,6 +74,7 @@ let currentTemplateId = null;
 let currentContactId = null;
 let templates = [];
 let savedContacts = [];
+let uiPosition = null;
 
 // New CRM state
 let globalCategories = [];
@@ -55,6 +84,7 @@ let tasksCalMonth = null;
 let tasksDayViewDate = null;
 let tasksDetailContactId = null;
 let tasksDetailBackView = 'day';
+let tasksDetailEditMode = false;
 let scheduledDatePicker = null;
 let currentContactScheduledDate = null;
 let currentContactCategory = null;
@@ -255,7 +285,8 @@ let globalSettings = {
     clinic_phone: '',
     clinic_google: '',
     clinic_address: '',
-    notes: ''
+    notes: '',
+    follow_up_notes: ''
 };
 
 // Initialize
@@ -271,6 +302,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     setupEventListeners();
     setupTabNavigation();
     initScheduledDatePicker();
+    restorePosition();
 });
 
 // Storage Functions - File-based via API
@@ -293,6 +325,11 @@ async function loadFromStorage() {
         // Load contacts
         if (data.savedContacts && Array.isArray(data.savedContacts)) {
             savedContacts = data.savedContacts;
+        }
+
+        // Load saved UI position
+        if (data.uiPosition) {
+            uiPosition = data.uiPosition;
         }
 
         // Load templates and merge with defaults
@@ -365,7 +402,8 @@ async function saveToStorage() {
             globalCategories,
             globalSettings,
             templates,
-            savedContacts
+            savedContacts,
+            uiPosition
         };
         await fetch('/api/data', {
             method: 'POST',
@@ -379,7 +417,12 @@ async function saveToStorage() {
 
 function updateGlobalSetting(key, value) {
     globalSettings[key] = value;
-    saveToStorage(); // Fire and forget - no need to await for settings updates
+    // Auto-sync to currently loaded contact so notes/fields persist without needing "Save Contact"
+    if (currentContactId) {
+        const contact = savedContacts.find(c => c.id === currentContactId);
+        if (contact) contact[key] = value;
+    }
+    saveToStorage();
 }
 
 // Contact Functions
@@ -455,7 +498,8 @@ function loadContact(id) {
         clinic_phone: contact.clinic_phone || '',
         clinic_google: contact.clinic_google || '',
         clinic_address: contact.clinic_address || '',
-        notes: contact.notes || ''
+        notes: contact.notes || '',
+        follow_up_notes: contact.follow_up_notes || ''
     };
 
     currentContactScheduledDate = contact.scheduledDate || null;
@@ -497,7 +541,8 @@ function clearForm() {
         clinic_phone: '',
         clinic_google: '',
         clinic_address: '',
-        notes: ''
+        notes: '',
+        follow_up_notes: ''
     };
     populateFormFromSettings();
     if (scheduledDatePicker) {
@@ -630,6 +675,16 @@ function replaceVariables(message) {
     return result;
 }
 
+// Normalize any Indian phone format to 91XXXXXXXXXX for wa.me
+function normalizeWAPhone(raw) {
+    const digits = raw.replace(/[^0-9]/g, '');
+    if (digits.length === 10) return '91' + digits;                   // 9876543210
+    if (digits.length === 11 && digits[0] === '0') return '91' + digits.slice(1); // 09876543210
+    if (digits.length === 12 && digits.startsWith('91')) return digits; // 919876543210
+    if (digits.length === 13 && digits.startsWith('091')) return '91' + digits.slice(3); // 0919876543210 (edge)
+    return digits; // fallback: use as-is
+}
+
 // WhatsApp URL Generation
 function generateWhatsAppUrl(message) {
     const phone = globalSettings.phone.replace(/[^0-9]/g, '');
@@ -665,6 +720,74 @@ function showToast(message) {
         elements.toast.classList.remove('active');
     }, 2500);
 }
+
+// ─── Save / Restore Position ─────────────────────────────────────────────────
+
+async function savePosition() {
+    const activeTab = document.querySelector('.tab-btn.active')?.dataset.tab || 'whatsapp';
+
+    let tasksSubView = 'category';
+    if (document.getElementById('tasks-day-view')?.style.display !== 'none') tasksSubView = 'day';
+    if (document.getElementById('tasks-detail-view')?.style.display !== 'none') tasksSubView = 'detail';
+
+    uiPosition = {
+        tab: activeTab,
+        tasksSubView,
+        tasksCurrentCat,
+        tasksDayViewDate,
+        tasksDetailContactId,
+        tasksDetailBackView
+    };
+
+    await saveToStorage();
+
+    // Brief visual feedback on the button
+    const btn = document.getElementById('savePositionBtn');
+    if (btn) {
+        btn.classList.add('saved');
+        setTimeout(() => btn.classList.remove('saved'), 1500);
+    }
+    showToast('Position saved!');
+}
+
+function restorePosition() {
+    const pos = uiPosition;
+    if (!pos) return;
+
+    try {
+        // Switch to the saved tab
+        if (pos.tab) {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+            const btn = document.querySelector(`.tab-btn[data-tab="${pos.tab}"]`);
+            if (btn) btn.classList.add('active');
+            const pane = document.getElementById('tab-' + pos.tab);
+            if (pane) pane.classList.add('active');
+        }
+
+        // Restore tasks navigation state
+        if (pos.tab === 'tasks') {
+            tasksCurrentCat = pos.tasksCurrentCat || '__calendar__';
+            tasksDayViewDate = pos.tasksDayViewDate || null;
+            tasksDetailContactId = pos.tasksDetailContactId || null;
+            tasksDetailBackView = pos.tasksDetailBackView || 'day';
+
+            renderTasksView();
+
+            if (pos.tasksSubView === 'day' && tasksDayViewDate) {
+                showTasksSubView('day');
+                renderDayView();
+            } else if (pos.tasksSubView === 'detail' && tasksDetailContactId) {
+                showTasksSubView('detail');
+                renderTasksDetail();
+            }
+        }
+    } catch (e) {
+        console.error('Error restoring position:', e);
+    }
+}
+
+// ────────────────────────────────────────────────────────────────────────────
 
 // Check if file is an image based on extension
 function isImageFile(filename) {
@@ -720,7 +843,17 @@ function renderTemplates() {
         }).join('');
 
         return `
-            <div class="template-chip" data-id="${template.id}">
+            <div class="template-chip" data-id="${template.id}" draggable="true">
+                <div class="drag-handle" title="Drag to reorder">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="9" cy="5" r="1" fill="currentColor" stroke="none"/>
+                        <circle cx="15" cy="5" r="1" fill="currentColor" stroke="none"/>
+                        <circle cx="9" cy="12" r="1" fill="currentColor" stroke="none"/>
+                        <circle cx="15" cy="12" r="1" fill="currentColor" stroke="none"/>
+                        <circle cx="9" cy="19" r="1" fill="currentColor" stroke="none"/>
+                        <circle cx="15" cy="19" r="1" fill="currentColor" stroke="none"/>
+                    </svg>
+                </div>
                 <div class="template-info" onclick="openEditModal('${template.id}')">
                     <div class="template-name">${escapeHtml(template.name)}</div>
                     <div class="template-preview">${escapeHtml(previewText)}</div>
@@ -744,6 +877,55 @@ function renderTemplates() {
             </div>
         `;
     }).join('');
+
+    initTemplateDrag();
+}
+
+function initTemplateDrag() {
+    const grid = elements.templatesGrid;
+    let dragSrcId = null;
+
+    grid.querySelectorAll('.template-chip').forEach(chip => {
+        chip.addEventListener('dragstart', e => {
+            dragSrcId = chip.dataset.id;
+            chip.classList.add('dragging');
+            e.dataTransfer.effectAllowed = 'move';
+        });
+
+        chip.addEventListener('dragend', () => {
+            chip.classList.remove('dragging');
+            grid.querySelectorAll('.template-chip').forEach(c => c.classList.remove('drag-over'));
+        });
+
+        chip.addEventListener('dragover', e => {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+            if (chip.dataset.id !== dragSrcId) {
+                grid.querySelectorAll('.template-chip').forEach(c => c.classList.remove('drag-over'));
+                chip.classList.add('drag-over');
+            }
+        });
+
+        chip.addEventListener('dragleave', () => {
+            chip.classList.remove('drag-over');
+        });
+
+        chip.addEventListener('drop', e => {
+            e.preventDefault();
+            chip.classList.remove('drag-over');
+            if (!dragSrcId || chip.dataset.id === dragSrcId) return;
+
+            const srcIndex = templates.findIndex(t => t.id === dragSrcId);
+            const dstIndex = templates.findIndex(t => t.id === chip.dataset.id);
+            if (srcIndex === -1 || dstIndex === -1) return;
+
+            const [moved] = templates.splice(srcIndex, 1);
+            templates.splice(dstIndex, 0, moved);
+
+            saveToStorage();
+            renderTemplates();
+        });
+    });
 }
 
 function escapeHtml(text) {
@@ -1024,9 +1206,18 @@ function renderCategorySelector() {
         </button>
     `;
 
+    // Built-in OTHER category
+    const otherActive = tasksCurrentCat === 'OTHER';
+    html += `<button class="category-btn ${otherActive ? 'active' : ''}" onclick="selectTasksCategory('OTHER')">OTHER</button>`;
+
     globalCategories.forEach(cat => {
         const isActive = tasksCurrentCat === cat;
-        html += `<button class="category-btn ${isActive ? 'active' : ''}" onclick="selectTasksCategory('${escapeHtml(cat)}')">${escapeHtml(cat)}</button>`;
+        const catEsc = escapeHtml(cat);
+        html += `
+        <span class="category-btn-wrap">
+            <button class="category-btn ${isActive ? 'active' : ''}" onclick="selectTasksCategory('${catEsc}')">${catEsc}</button>
+            <span class="cat-delete-x" onclick="event.stopPropagation(); deleteCategory('${catEsc}')" title="Delete category">✕</span>
+        </span>`;
     });
 
     container.innerHTML = html;
@@ -1041,6 +1232,27 @@ window.selectTasksCategory = function(cat) {
     } else {
         showCategoryList();
     }
+};
+
+window.deleteCategory = function(cat) {
+    if (!confirm(`Delete category "${cat}"?\n\nAll contacts in this category will be moved to OTHER.`)) return;
+    savedContacts.forEach(c => {
+        if (c.category === cat) c.category = 'OTHER';
+    });
+    globalCategories = globalCategories.filter(c => c !== cat);
+    if (tasksCurrentCat === cat) {
+        tasksCurrentCat = 'OTHER';
+    }
+    saveToStorage();
+    renderCategorySelector();
+    // Re-render current sub-view
+    const detailEl = document.getElementById('tasks-detail-view');
+    if (detailEl && detailEl.style.display !== 'none') {
+        renderTasksDetail();
+    } else if (tasksCurrentCat !== '__calendar__') {
+        showCategoryList();
+    }
+    showToast(`Category "${cat}" deleted. Contacts moved to OTHER.`);
 };
 
 function showCalendar() {
@@ -1171,8 +1383,9 @@ function renderContactRows(contacts, mode) {
     return contacts.map(contact => {
         const clinicName = escapeHtml(contact.clinic_name || 'Unknown Clinic');
         const ownerName = escapeHtml(contact.name || '');
-        const phone = escapeHtml(contact.clinic_phone || contact.phone || '');
-        const rawPhone = (contact.clinic_phone || contact.phone || '').replace(/\s/g, '');
+        const phone = escapeHtml(contact.phone || contact.clinic_phone || '');
+        const rawPhone = (contact.phone || contact.clinic_phone || '').replace(/[^0-9+]/g, '');
+        const waPhone = normalizeWAPhone(contact.phone || contact.clinic_phone || '');
         const backView = mode === 'day' ? 'day' : 'category';
 
         return `
@@ -1187,6 +1400,12 @@ function renderContactRows(contacts, mode) {
                             <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
                         </svg>
                         Call
+                    </a>` : ''}
+                    ${waPhone ? `<a class="btn-wa" href="https://wa.me/${waPhone}" target="_blank">
+                        <svg viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413Z"/>
+                        </svg>
+                        WA
                     </a>` : ''}
                     <button class="btn-open-contact" onclick="openTasksDetail('${contact.id}', '${backView}')">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -1205,6 +1424,7 @@ function renderContactRows(contacts, mode) {
 window.openTasksDetail = function(id, backView) {
     tasksDetailContactId = id;
     tasksDetailBackView = backView || 'day';
+    tasksDetailEditMode = false;
     showTasksSubView('detail');
     renderTasksDetail();
 };
@@ -1213,6 +1433,8 @@ function renderTasksDetail() {
     const contact = savedContacts.find(c => c.id === tasksDetailContactId);
     const container = document.getElementById('tasksDetailContent');
     if (!contact || !container) return;
+
+    const id = contact.id;
 
     const logs = (contact.messageLogs || []).slice().reverse();
     const logsHtml = logs.length === 0
@@ -1227,38 +1449,272 @@ function renderTasksDetail() {
             </div>`;
         }).join('');
 
-    // Category options
     const currentCat = contact.category || '';
-    const catOptions = ['', ...globalCategories].map(cat =>
+    const allCatOptions = ['', 'OTHER', ...globalCategories];
+    const catOptions = allCatOptions.map(cat =>
         `<option value="${escapeHtml(cat)}" ${cat === currentCat ? 'selected' : ''}>${cat ? escapeHtml(cat) : '— None —'}</option>`
     ).join('');
 
-    container.innerHTML = `
-        <div class="detail-fields">
-            <div class="detail-field"><strong>Clinic</strong><span>${escapeHtml(contact.clinic_name || '—')}</span></div>
-            <div class="detail-field"><strong>Owner / Name</strong><span>${escapeHtml(contact.name || '—')}</span></div>
-            <div class="detail-field"><strong>Clinic Phone</strong><span>${escapeHtml(contact.clinic_phone || '—')}</span></div>
-            <div class="detail-field"><strong>WhatsApp</strong><span>${escapeHtml(contact.phone || '—')}</span></div>
-            <div class="detail-field"><strong>Address</strong><span>${escapeHtml(contact.clinic_address || '—')}</span></div>
-            <div class="detail-field"><strong>Scheduled Date</strong><span>${escapeHtml(contact.scheduledDate || '—')}</span></div>
-            ${contact.notes ? `<div class="detail-field"><strong>Notes</strong><span>${escapeHtml(contact.notes)}</span></div>` : ''}
-        </div>
+    const notesVal = escapeHtml(contact.notes || '');
+    const followUpNotesVal = escapeHtml(contact.follow_up_notes || '');
 
+    // ── Contact switcher pill + call button row ───────────────────────────
+    const detailList = getTasksDetailList();
+    const detailIdx  = detailList.findIndex(c => c.id === id);
+    const rawDetailPhone = (contact.phone || contact.clinic_phone || '').replace(/[^0-9+]/g, '');
+    const waDetailPhone = normalizeWAPhone(contact.phone || contact.clinic_phone || '');
+
+    const pillHtml = detailList.length > 1 ? `
+        <div class="detail-nav">
+            <button class="btn-tasks-nav detail-nav-btn" onclick="navigateDetailContact(-1)"${detailIdx <= 0 ? ' disabled' : ''}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+            </button>
+            <span class="detail-nav-label">Contact ${detailIdx + 1} of ${detailList.length}</span>
+            <button class="btn-tasks-nav detail-nav-btn" onclick="navigateDetailContact(1)"${detailIdx >= detailList.length - 1 ? ' disabled' : ''}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+            </button>
+        </div>` : '';
+
+    const navigatorHtml = `
+        <div class="detail-nav-row">
+            ${pillHtml}
+            ${rawDetailPhone ? `<a class="btn-call btn-call-detail" href="tel:${rawDetailPhone}">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
+                </svg>
+                Call
+            </a>` : ''}
+            ${waDetailPhone ? `<a class="btn-wa btn-call-detail" href="https://wa.me/${waDetailPhone}" target="_blank">
+                <svg viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413Z"/>
+                </svg>
+                WA
+            </a>` : ''}
+        </div>`;
+
+    // ── Category & history HTML (shared between both modes) ──────────────
+    const canDeleteCat = currentCat && currentCat !== 'OTHER' && globalCategories.includes(currentCat);
+    const categoryHtml = `
         <div class="detail-section">
             <h4>Category</h4>
             <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-                <select class="detail-cat-select" onchange="updateContactCategory('${contact.id}', this.value)">
+                <select class="detail-cat-select" onchange="updateContactCategory('${id}', this.value)">
                     ${catOptions}
                 </select>
-                <button class="btn-add-category" onclick="promptAddCategoryFromDetail('${contact.id}')">+ New Category</button>
+                ${canDeleteCat ? `<button class="btn-delete-category" onclick="deleteCategory('${escapeHtml(currentCat)}')" title="Delete this category from all contacts">✕ Delete</button>` : ''}
+                <button class="btn-add-category" onclick="promptAddCategoryFromDetail('${id}')">+ New Category</button>
             </div>
-        </div>
+        </div>`;
 
+    const historyHtml = `
         <div class="detail-section">
             <h4>Message History</h4>
             ${logsHtml}
-        </div>
-    `;
+        </div>`;
+
+    // ── Notes (always editable – shared between both modes) ──────────────
+    const notesHtml = `
+        <div class="detail-section">
+            <h4>Notes <span class="detail-notes-hint">— auto-saves on blur</span></h4>
+            <textarea class="detail-notes-input" id="detailNotesInput"
+                placeholder="Add notes about this contact...">${notesVal}</textarea>
+        </div>`;
+
+    const followUpNotesHtml = `
+        <div class="detail-section">
+            <h4>Follow Up Notes <span class="detail-notes-hint">— auto-saves on blur</span></h4>
+            <textarea class="detail-notes-input detail-followup-notes-input" id="detailFollowUpNotesInput"
+                placeholder="Follow up notes about this contact...">${followUpNotesVal}</textarea>
+        </div>`;
+
+    if (tasksDetailEditMode) {
+        // ── EDIT MODE ────────────────────────────────────────────────────
+        container.innerHTML = navigatorHtml + followUpNotesHtml + `
+            <div class="detail-fields detail-edit-mode">
+                <div class="detail-field-edit">
+                    <label>Clinic Name</label>
+                    <input id="de-clinic_name" value="${escapeHtml(contact.clinic_name || '')}">
+                </div>
+                <div class="detail-field-edit">
+                    <label>Owner / Name</label>
+                    <input id="de-name" value="${escapeHtml(contact.name || '')}">
+                </div>
+                <div class="detail-field-edit">
+                    <label>Clinic Phone</label>
+                    <input id="de-clinic_phone" value="${escapeHtml(contact.clinic_phone || '')}">
+                </div>
+                <div class="detail-field-edit">
+                    <label>WhatsApp Phone</label>
+                    <input id="de-phone" value="${escapeHtml(contact.phone || '')}">
+                </div>
+                <div class="detail-field-edit">
+                    <label>Clinic Address</label>
+                    <input id="de-clinic_address" value="${escapeHtml(contact.clinic_address || '')}">
+                </div>
+                <div class="detail-field-edit">
+                    <label>Google Maps Link</label>
+                    <input id="de-clinic_google" value="${escapeHtml(contact.clinic_google || '')}">
+                </div>
+                <div class="detail-edit-actions">
+                    <button class="btn-detail-save" onclick="saveDetailEdits('${id}')">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+                            <polyline points="17 21 17 13 7 13 7 21"/>
+                            <polyline points="7 3 7 8 15 8"/>
+                        </svg>
+                        Save Changes
+                    </button>
+                    <button class="btn-detail-cancel" onclick="cancelDetailEdit()">Cancel</button>
+                </div>
+            </div>
+            ${notesHtml}
+            ${categoryHtml}
+            ${historyHtml}
+        `;
+    } else {
+        // ── READ MODE ────────────────────────────────────────────────────
+        container.innerHTML = navigatorHtml + followUpNotesHtml + `
+            <div class="detail-fields">
+                <div class="detail-fields-header">
+                    <button class="btn-detail-edit" onclick="enterDetailEditMode()">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                        </svg>
+                        Edit Details
+                    </button>
+                </div>
+                <div class="detail-field"><strong>Clinic</strong><span>${escapeHtml(contact.clinic_name || '—')}</span></div>
+                <div class="detail-field"><strong>Owner / Name</strong><span>${escapeHtml(contact.name || '—')}</span></div>
+                <div class="detail-field"><strong>Clinic Phone</strong><span>${escapeHtml(contact.clinic_phone || '—')}</span></div>
+                <div class="detail-field"><strong>WhatsApp</strong><span>${escapeHtml(contact.phone || '—')}</span></div>
+                <div class="detail-field"><strong>Address</strong><span>${escapeHtml(contact.clinic_address || '—')}</span></div>
+                <div class="detail-field"><strong>Scheduled Date</strong><span>${escapeHtml(contact.scheduledDate || '—')}</span></div>
+            </div>
+            ${notesHtml}
+            ${categoryHtml}
+            ${historyHtml}
+        `;
+    }
+
+    // Attach notes auto-save on blur (works for both modes since notes HTML is shared)
+    const notesInput = document.getElementById('detailNotesInput');
+    if (notesInput) {
+        notesInput.addEventListener('blur', (e) => {
+            saveDetailNotes(id, e.target.value);
+        });
+    }
+
+    const followUpNotesInput = document.getElementById('detailFollowUpNotesInput');
+    if (followUpNotesInput) {
+        const autoResize = (el) => { el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px'; };
+        autoResize(followUpNotesInput);
+        followUpNotesInput.addEventListener('input', () => autoResize(followUpNotesInput));
+        followUpNotesInput.addEventListener('blur', (e) => {
+            saveDetailFollowUpNotes(id, e.target.value);
+        });
+    }
+}
+
+window.enterDetailEditMode = function() {
+    tasksDetailEditMode = true;
+    renderTasksDetail();
+};
+
+window.cancelDetailEdit = function() {
+    tasksDetailEditMode = false;
+    renderTasksDetail();
+};
+
+function getTasksDetailList() {
+    if (tasksDetailBackView === 'day') {
+        return savedContacts.filter(c => c.scheduledDate === tasksDayViewDate);
+    } else if (tasksDetailBackView === 'category') {
+        return savedContacts.filter(c => c.category === tasksCurrentCat);
+    }
+    return [];
+}
+
+window.navigateDetailContact = function(dir) {
+    const list = getTasksDetailList();
+    const idx = list.findIndex(c => c.id === tasksDetailContactId);
+    const next = idx + dir;
+    if (next >= 0 && next < list.length) {
+        tasksDetailContactId = list[next].id;
+        tasksDetailEditMode = false;
+        renderTasksDetail();
+    }
+};
+
+window.saveDetailEdits = function(id) {
+    const contact = savedContacts.find(c => c.id === id);
+    if (!contact) return;
+
+    // Save notes first (it's in the DOM during edit mode too)
+    const notesInput = document.getElementById('detailNotesInput');
+    if (notesInput) contact.notes = notesInput.value;
+
+    const followUpNotesInput = document.getElementById('detailFollowUpNotesInput');
+    if (followUpNotesInput) contact.follow_up_notes = followUpNotesInput.value;
+
+    const fieldMap = {
+        clinic_name: 'de-clinic_name',
+        name: 'de-name',
+        clinic_phone: 'de-clinic_phone',
+        phone: 'de-phone',
+        clinic_address: 'de-clinic_address',
+        clinic_google: 'de-clinic_google'
+    };
+    Object.entries(fieldMap).forEach(([field, inputId]) => {
+        const input = document.getElementById(inputId);
+        if (input) contact[field] = input.value;
+    });
+
+    // Sync to globalSettings + form if this is the currently loaded contact
+    if (currentContactId === id) {
+        Object.assign(globalSettings, {
+            clinic_name: contact.clinic_name,
+            name: contact.name,
+            clinic_phone: contact.clinic_phone,
+            phone: contact.phone,
+            clinic_address: contact.clinic_address,
+            clinic_google: contact.clinic_google,
+            notes: contact.notes,
+            follow_up_notes: contact.follow_up_notes
+        });
+        populateFormFromSettings();
+    }
+
+    saveToStorage();
+    showToast('Contact updated');
+    tasksDetailEditMode = false;
+    renderTasksDetail();
+    renderContacts();
+};
+
+function saveDetailNotes(id, notes) {
+    const contact = savedContacts.find(c => c.id === id);
+    if (!contact || contact.notes === notes) return;
+    contact.notes = notes;
+    // Sync back to the WhatsApp tab form if this contact is currently loaded there
+    if (currentContactId === id) {
+        globalSettings.notes = notes;
+        if (elements.notes) elements.notes.value = notes;
+    }
+    saveToStorage();
+    showToast('Notes saved');
+}
+
+function saveDetailFollowUpNotes(id, notes) {
+    const contact = savedContacts.find(c => c.id === id);
+    if (!contact || contact.follow_up_notes === notes) return;
+    contact.follow_up_notes = notes;
+    if (currentContactId === id) {
+        globalSettings.follow_up_notes = notes;
+        if (elements.follow_up_notes) elements.follow_up_notes.value = notes;
+    }
+    saveToStorage();
+    showToast('Follow up notes saved');
 }
 
 window.updateContactCategory = function(id, cat) {
@@ -1289,8 +1745,11 @@ window.promptAddCategoryFromDetail = function(contactId) {
 
 // Event Listeners
 function setupEventListeners() {
+    // Save position button
+    document.getElementById('savePositionBtn')?.addEventListener('click', savePosition);
+
     // Global settings auto-save
-    const settingsInputs = ['phone', 'name', 'owner_name', 'clinic_name', 'clinic_phone', 'clinic_google', 'clinic_address', 'notes'];
+    const settingsInputs = ['phone', 'name', 'owner_name', 'clinic_name', 'clinic_phone', 'clinic_google', 'clinic_address', 'notes', 'follow_up_notes'];
     settingsInputs.forEach(key => {
         elements[key]?.addEventListener('input', (e) => {
             updateGlobalSetting(key, e.target.value);
