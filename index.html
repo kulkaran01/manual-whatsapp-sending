@@ -6,10 +6,44 @@
     <title>WhatsApp Template Messenger</title>
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <script>
+        // Apply theme before CSS renders to avoid flash
+        (function(){
+            var s=localStorage.getItem('df-theme');
+            var d=window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches;
+            document.documentElement.setAttribute('data-theme',(s?s==='dark':d)?'dark':'light');
+        })();
+    </script>
 </head>
 <body>
     <div class="container">
         <header class="header">
+            <button class="btn-save-position" id="savePositionBtn" title="Save current position — restores here on next open">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
+                </svg>
+                Save Position
+            </button>
+            <button class="theme-toggle" id="themeToggle" title="Toggle dark mode" aria-label="Toggle dark mode">
+                <span class="theme-toggle-track">
+                    <span class="theme-toggle-thumb">
+                        <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="5"/>
+                            <line x1="12" y1="1" x2="12" y2="3"/>
+                            <line x1="12" y1="21" x2="12" y2="23"/>
+                            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+                            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+                            <line x1="1" y1="12" x2="3" y2="12"/>
+                            <line x1="21" y1="12" x2="23" y2="12"/>
+                            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+                            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+                        </svg>
+                        <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+                        </svg>
+                    </span>
+                </span>
+            </button>
             <div class="logo">
                 <svg class="logo-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
@@ -81,14 +115,6 @@
                         Current Contact
                     </h2>
                     <div class="settings-actions">
-                        <button class="btn-save-contact" id="saveContactBtn">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
-                                <polyline points="17 21 17 13 7 13 7 21"/>
-                                <polyline points="7 3 7 8 15 8"/>
-                            </svg>
-                            Save Contact
-                        </button>
                         <button class="btn-clear-form" id="clearFormBtn">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <path d="M3 6h18"/>
@@ -154,6 +180,17 @@
                         <input type="text" id="clinic_phone" placeholder="+91-123-456-7890">
                     </div>
 
+                    <div class="input-group">
+                        <label for="email">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                                <polyline points="22,6 12,13 2,6"/>
+                            </svg>
+                            Email
+                        </label>
+                        <input type="email" id="email" placeholder="doctor@clinic.com">
+                    </div>
+
                     <div class="input-group full-width">
                         <label for="clinic_google">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -190,6 +227,19 @@
                     </div>
 
                     <div class="input-group full-width">
+                        <label for="follow_up_notes">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                                <polyline points="14 2 14 8 20 8"/>
+                                <line x1="16" y1="13" x2="8" y2="13"/>
+                                <line x1="16" y1="17" x2="8" y2="17"/>
+                            </svg>
+                            Follow Up Notes
+                        </label>
+                        <textarea id="follow_up_notes" rows="3" placeholder="Follow up notes about this contact..."></textarea>
+                    </div>
+
+                    <div class="input-group full-width">
                         <label>
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
@@ -200,7 +250,17 @@
                             Schedule Date
                         </label>
                         <div id="scheduledDatePicker"></div>
-                        <button class="btn-clear-date" id="clearScheduledDate">Clear date</button>
+                        <div class="scheduled-date-actions">
+                            <button class="btn-clear-date" id="clearScheduledDate">Clear date</button>
+                            <button class="btn-save-contact" id="saveContactBtn">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+                                    <polyline points="17 21 17 13 7 13 7 21"/>
+                                    <polyline points="7 3 7 8 15 8"/>
+                                </svg>
+                                Save Contact
+                            </button>
+                        </div>
                     </div>
                 </div>
             </section>
@@ -267,6 +327,7 @@
                                 <span class="variable-chip" data-var="{owner_name}">{owner_name}</span>
                                 <span class="variable-chip" data-var="{clinic_name}">{clinic_name}</span>
                                 <span class="variable-chip" data-var="{clinic_phone}">{clinic_phone}</span>
+                                <span class="variable-chip" data-var="{email}">{email}</span>
                                 <span class="variable-chip" data-var="{clinic_google}">{clinic_google}</span>
                                 <span class="variable-chip" data-var="{clinic_address}">{clinic_address}</span>
                             </div>
@@ -337,6 +398,9 @@
                 </div>
                 <div class="category-selector" id="categorySelector">
                     <!-- Category buttons rendered by JS -->
+                </div>
+                <div class="tasks-quick-send-row" id="tasksQuickSendRow">
+                    <!-- Quick-send selectors rendered by JS -->
                 </div>
                 <div id="tasks-calendar-container"></div>
                 <div id="tasks-category-list-container"></div>

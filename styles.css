@@ -1606,6 +1606,120 @@ section {
     height: 14px;
 }
 
+.btn-email {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 7px 14px;
+    background: #0ea5e9;
+    color: var(--white);
+    border: none;
+    border-radius: var(--radius-sm);
+    font-size: 0.83rem;
+    font-weight: 500;
+    cursor: pointer;
+    text-decoration: none;
+    transition: var(--transition);
+}
+
+.btn-email:hover {
+    background: #0284c7;
+}
+
+.btn-email svg {
+    width: 14px;
+    height: 14px;
+}
+
+.btn-sm {
+    padding: 5px 10px !important;
+    font-size: 0.78rem !important;
+}
+
+.btn-sm svg {
+    width: 12px !important;
+    height: 12px !important;
+}
+
+/* Quick-send selectors in Tasks header */
+.tasks-quick-send-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    padding: 8px 12px;
+    background: var(--gray-50);
+    border: 1px solid var(--gray-200);
+    border-radius: var(--radius-sm);
+    margin-bottom: 12px;
+}
+
+.quick-send-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.quick-send-label {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--gray-600);
+    white-space: nowrap;
+}
+
+.quick-send-select {
+    font-size: 0.78rem;
+    padding: 4px 8px;
+    border: 1px solid var(--gray-300);
+    border-radius: var(--radius-sm);
+    background: var(--white);
+    color: var(--gray-700);
+    max-width: 180px;
+}
+
+/* Send templates section in task detail */
+.detail-templates-section {
+    margin-top: 4px;
+}
+
+.detail-templates-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    max-height: 280px;
+    overflow-y: auto;
+}
+
+.detail-template-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 6px 8px;
+    background: var(--gray-50);
+    border: 1px solid var(--gray-200);
+    border-radius: var(--radius-sm);
+}
+
+.detail-template-name {
+    font-size: 0.8rem;
+    color: var(--gray-700);
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.detail-template-btns {
+    display: flex;
+    gap: 5px;
+    flex-shrink: 0;
+}
+
 .btn-open-contact {
     display: inline-flex;
     align-items: center;
@@ -2287,6 +2401,40 @@ section {
 [data-theme="dark"] .btn-wa:hover {
     background: #0f7a52;
     box-shadow: 0 0 16px rgba(37, 211, 102, 0.3);
+}
+
+[data-theme="dark"] .btn-email {
+    background: #0369a1;
+    box-shadow: 0 0 10px rgba(14, 165, 233, 0.2);
+}
+
+[data-theme="dark"] .btn-email:hover {
+    background: #075985;
+    box-shadow: 0 0 16px rgba(14, 165, 233, 0.3);
+}
+
+[data-theme="dark"] .tasks-quick-send-row {
+    background: var(--gray-800);
+    border-color: var(--gray-700);
+}
+
+[data-theme="dark"] .quick-send-label {
+    color: var(--gray-400);
+}
+
+[data-theme="dark"] .quick-send-select {
+    background: var(--gray-700);
+    border-color: var(--gray-600);
+    color: var(--gray-200);
+}
+
+[data-theme="dark"] .detail-template-row {
+    background: var(--gray-800);
+    border-color: var(--gray-700);
+}
+
+[data-theme="dark"] .detail-template-name {
+    color: var(--gray-300);
 }
 
 [data-theme="dark"] .btn-save-position {

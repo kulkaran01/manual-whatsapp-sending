@@ -35,6 +35,7 @@ const elements = {
     owner_name: document.getElementById('owner_name'),
     clinic_name: document.getElementById('clinic_name'),
     clinic_phone: document.getElementById('clinic_phone'),
+    email: document.getElementById('email'),
     clinic_google: document.getElementById('clinic_google'),
     clinic_address: document.getElementById('clinic_address'),
     notes: document.getElementById('notes'),
@@ -283,11 +284,16 @@ let globalSettings = {
     owner_name: '',
     clinic_name: '',
     clinic_phone: '',
+    email: '',
     clinic_google: '',
     clinic_address: '',
     notes: '',
     follow_up_notes: ''
 };
+
+// Quick-send template assignments
+let quickWATemplateId = null;
+let quickEmailTemplateId = null;
 
 // Initialize
 document.addEventListener('DOMContentLoaded', async () => {
@@ -331,6 +337,10 @@ async function loadFromStorage() {
         if (data.uiPosition) {
             uiPosition = data.uiPosition;
         }
+
+        // Load quick-send template assignments
+        if (data.quickWATemplateId !== undefined) quickWATemplateId = data.quickWATemplateId;
+        if (data.quickEmailTemplateId !== undefined) quickEmailTemplateId = data.quickEmailTemplateId;
 
         // Load templates and merge with defaults
         let userTemplates = [];
@@ -403,7 +413,9 @@ async function saveToStorage() {
             globalSettings,
             templates,
             savedContacts,
-            uiPosition
+            uiPosition,
+            quickWATemplateId,
+            quickEmailTemplateId
         };
         await fetch('/api/data', {
             method: 'POST',
@@ -496,6 +508,7 @@ function loadContact(id) {
         owner_name: contact.owner_name || '',
         clinic_name: contact.clinic_name || '',
         clinic_phone: contact.clinic_phone || '',
+        email: contact.email || '',
         clinic_google: contact.clinic_google || '',
         clinic_address: contact.clinic_address || '',
         notes: contact.notes || '',
@@ -539,6 +552,7 @@ function clearForm() {
         owner_name: '',
         clinic_name: '',
         clinic_phone: '',
+        email: '',
         clinic_google: '',
         clinic_address: '',
         notes: '',
@@ -664,6 +678,7 @@ function replaceVariables(message) {
         '{owner_name}': globalSettings.owner_name,
         '{clinic_name}': globalSettings.clinic_name,
         '{clinic_phone}': globalSettings.clinic_phone,
+        '{email}': globalSettings.email,
         '{clinic_google}': globalSettings.clinic_google,
         '{clinic_address}': globalSettings.clinic_address
     };
@@ -691,6 +706,30 @@ function generateWhatsAppUrl(message) {
     const filledMessage = replaceVariables(message);
     const encodedMessage = encodeURIComponent(filledMessage);
     return `https://api.whatsapp.com/send?phone=${phone}&text=${encodedMessage}`;
+}
+
+// Email URL (mailto:) Generation
+function generateEmailUrl(message, templateName, email) {
+    const filled = replaceVariables(message);
+    return `mailto:${encodeURIComponent(email)}?subject=${encodeURIComponent(templateName)}&body=${encodeURIComponent(filled)}`;
+}
+
+// Replace variables using a contact object instead of globalSettings (for tasks tab)
+function replaceVariablesForContact(message, contact) {
+    let result = message;
+    const vars = {
+        '{name}': contact.name,
+        '{owner_name}': contact.owner_name,
+        '{clinic_name}': contact.clinic_name,
+        '{clinic_phone}': contact.clinic_phone,
+        '{email}': contact.email,
+        '{clinic_google}': contact.clinic_google,
+        '{clinic_address}': contact.clinic_address
+    };
+    Object.entries(vars).forEach(([placeholder, value]) => {
+        result = result.split(placeholder).join(value || '');
+    });
+    return result;
 }
 
 // Clipboard Functions
@@ -864,7 +903,14 @@ function renderTemplates() {
                             <line x1="22" y1="2" x2="11" y2="13"/>
                             <polygon points="22 2 15 22 11 13 2 9 22 2"/>
                         </svg>
-                        Send
+                        WA
+                    </button>
+                    <button class="btn-email" onclick="event.stopPropagation(); sendEmailFromTemplate('${template.id}')">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                            <polyline points="22,6 12,13 2,6"/>
+                        </svg>
+                        Email
                     </button>
                     ${fileButtons}
                     <button class="btn-edit" onclick="event.stopPropagation(); openEditModal('${template.id}')">
@@ -1105,6 +1151,78 @@ window.sendMessage = function(id) {
     }
 };
 
+// Send WhatsApp template scoped to a specific contact (tasks tab)
+window.sendMessageToContact = function(templateId, contactId) {
+    const template = getTemplate(templateId);
+    const contact = savedContacts.find(c => c.id === contactId);
+    if (!template || !contact) return;
+
+    const phone = normalizeWAPhone(contact.phone || contact.clinic_phone || '');
+    if (!phone) { showToast('No phone number for this contact'); return; }
+
+    const filled = replaceVariablesForContact(template.message, contact);
+    const url = `https://api.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(filled)}`;
+    window.open(url, '_blank');
+
+    if (!Array.isArray(contact.messageLogs)) contact.messageLogs = [];
+    contact.messageLogs.push({ templateName: template.name, sentAt: new Date().toISOString(), channel: 'whatsapp' });
+    saveToStorage();
+    renderTasksDetail();
+};
+
+// Send Email template scoped to a specific contact (tasks tab)
+window.sendEmailToContact = function(templateId, contactId) {
+    const template = getTemplate(templateId);
+    const contact = savedContacts.find(c => c.id === contactId);
+    if (!template || !contact) return;
+
+    if (!contact.email) { showToast('No email for this contact'); return; }
+
+    const filled = replaceVariablesForContact(template.message, contact);
+    const url = `mailto:${encodeURIComponent(contact.email)}?subject=${encodeURIComponent(template.name)}&body=${encodeURIComponent(filled)}`;
+    window.open(url, '_self');
+
+    if (!Array.isArray(contact.messageLogs)) contact.messageLogs = [];
+    contact.messageLogs.push({ templateName: template.name, sentAt: new Date().toISOString(), channel: 'email' });
+    saveToStorage();
+    renderTasksDetail();
+};
+
+// Send Email template from WhatsApp tab (uses globalSettings)
+window.sendEmailFromTemplate = function(id) {
+    const template = getTemplate(id);
+    if (!template) return;
+
+    if (!globalSettings.email) {
+        showToast('Please enter an email address first!');
+        return;
+    }
+
+    const url = generateEmailUrl(template.message, template.name, globalSettings.email);
+    window.open(url, '_self');
+
+    if (currentContactId) {
+        const contact = savedContacts.find(c => c.id === currentContactId);
+        if (contact) {
+            if (!Array.isArray(contact.messageLogs)) contact.messageLogs = [];
+            contact.messageLogs.push({ templateName: template.name, sentAt: new Date().toISOString(), channel: 'email' });
+            saveToStorage();
+        }
+    }
+};
+
+// Quick-send WA from task row using assigned template
+window.quickSendWA = function(contactId) {
+    if (!quickWATemplateId) { showToast('No quick WA template assigned'); return; }
+    window.sendMessageToContact(quickWATemplateId, contactId);
+};
+
+// Quick-send Email from task row using assigned template
+window.quickSendEmail = function(contactId) {
+    if (!quickEmailTemplateId) { showToast('No quick Email template assigned'); return; }
+    window.sendEmailToContact(quickEmailTemplateId, contactId);
+};
+
 // Global function for edit button
 window.openEditModal = openEditModal;
 window.removeFileEntry = removeFileEntry;
@@ -1173,12 +1291,64 @@ function initScheduledDatePicker() {
 
 function renderTasksView() {
     renderCategorySelector();
+    renderQuickSendSelectors();
     if (tasksCurrentCat === '__calendar__') {
         showCalendar();
     } else {
         showCategoryList();
     }
 }
+
+function renderQuickSendSelectors() {
+    const container = document.getElementById('tasksQuickSendRow');
+    if (!container) return;
+
+    const noneOpt = `<option value="">— None —</option>`;
+    const templateOpts = templates.map(t =>
+        `<option value="${escapeHtml(t.id)}" ${t.id === quickWATemplateId ? 'selected' : ''}>${escapeHtml(t.name)}</option>`
+    ).join('');
+    const emailOpts = templates.map(t =>
+        `<option value="${escapeHtml(t.id)}" ${t.id === quickEmailTemplateId ? 'selected' : ''}>${escapeHtml(t.name)}</option>`
+    ).join('');
+
+    container.innerHTML = `
+        <div class="quick-send-item">
+            <label class="quick-send-label">
+                <svg viewBox="0 0 24 24" fill="currentColor" width="13" height="13">
+                    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413Z"/>
+                </svg>
+                Quick WA
+            </label>
+            <select class="quick-send-select" id="quickWATemplateSelect" onchange="setQuickWATemplate(this.value)">
+                ${noneOpt}${templateOpts}
+            </select>
+        </div>
+        <div class="quick-send-item">
+            <label class="quick-send-label">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13">
+                    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                    <polyline points="22,6 12,13 2,6"/>
+                </svg>
+                Quick Email
+            </label>
+            <select class="quick-send-select" id="quickEmailTemplateSelect" onchange="setQuickEmailTemplate(this.value)">
+                ${noneOpt}${emailOpts}
+            </select>
+        </div>
+    `;
+}
+
+window.setQuickWATemplate = function(id) {
+    quickWATemplateId = id || null;
+    saveToStorage();
+    showToast(id ? 'Quick WA template set' : 'Quick WA template cleared');
+};
+
+window.setQuickEmailTemplate = function(id) {
+    quickEmailTemplateId = id || null;
+    saveToStorage();
+    showToast(id ? 'Quick Email template set' : 'Quick Email template cleared');
+};
 
 function showTasksSubView(view) {
     const views = ['category', 'day', 'detail'];
@@ -1386,7 +1556,23 @@ function renderContactRows(contacts, mode) {
         const phone = escapeHtml(contact.phone || contact.clinic_phone || '');
         const rawPhone = (contact.phone || contact.clinic_phone || '').replace(/[^0-9+]/g, '');
         const waPhone = normalizeWAPhone(contact.phone || contact.clinic_phone || '');
+        const contactEmail = contact.email || '';
         const backView = mode === 'day' ? 'day' : 'category';
+
+        const waSvg = `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413Z"/></svg>`;
+        const emailSvg = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>`;
+
+        const waBtn = waPhone
+            ? (quickWATemplateId
+                ? `<button class="btn-wa" onclick="quickSendWA('${contact.id}')">${waSvg} WA</button>`
+                : `<a class="btn-wa" href="https://wa.me/${waPhone}" target="_blank">${waSvg} WA</a>`)
+            : '';
+
+        const emailBtn = contactEmail
+            ? (quickEmailTemplateId
+                ? `<button class="btn-email" onclick="quickSendEmail('${contact.id}')">${emailSvg} Email</button>`
+                : `<a class="btn-email" href="mailto:${encodeURIComponent(contactEmail)}">${emailSvg} Email</a>`)
+            : '';
 
         return `
             <div class="tasks-contact-row">
@@ -1401,12 +1587,8 @@ function renderContactRows(contacts, mode) {
                         </svg>
                         Call
                     </a>` : ''}
-                    ${waPhone ? `<a class="btn-wa" href="https://wa.me/${waPhone}" target="_blank">
-                        <svg viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413Z"/>
-                        </svg>
-                        WA
-                    </a>` : ''}
+                    ${waBtn}
+                    ${emailBtn}
                     <button class="btn-open-contact" onclick="openTasksDetail('${contact.id}', '${backView}')">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <circle cx="12" cy="12" r="10"/>
@@ -1428,6 +1610,39 @@ window.openTasksDetail = function(id, backView) {
     showTasksSubView('detail');
     renderTasksDetail();
 };
+
+function renderDetailTemplatesSection(contactId) {
+    const contact = savedContacts.find(c => c.id === contactId);
+    if (!contact) return '';
+
+    const hasPhone = !!normalizeWAPhone(contact.phone || contact.clinic_phone || '');
+    const hasEmail = !!contact.email;
+
+    if (!hasPhone && !hasEmail) return '';
+
+    const waSvg = `<svg viewBox="0 0 24 24" fill="currentColor" width="12" height="12"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413Z"/></svg>`;
+    const emailSvg = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>`;
+
+    const rows = templates.map(t => {
+        const waBtn = hasPhone
+            ? `<button class="btn-wa btn-sm" onclick="sendMessageToContact('${t.id}','${contactId}')">${waSvg} WA</button>`
+            : '';
+        const emailBtn = hasEmail
+            ? `<button class="btn-email btn-sm" onclick="sendEmailToContact('${t.id}','${contactId}')">${emailSvg} Email</button>`
+            : '';
+        return `
+            <div class="detail-template-row">
+                <span class="detail-template-name">${escapeHtml(t.name)}</span>
+                <div class="detail-template-btns">${waBtn}${emailBtn}</div>
+            </div>`;
+    }).join('');
+
+    return `
+        <div class="detail-section detail-templates-section">
+            <h4>Send Template</h4>
+            <div class="detail-templates-list">${rows}</div>
+        </div>`;
+}
 
 function renderTasksDetail() {
     const contact = savedContacts.find(c => c.id === tasksDetailContactId);
@@ -1552,6 +1767,10 @@ function renderTasksDetail() {
                     <input id="de-clinic_address" value="${escapeHtml(contact.clinic_address || '')}">
                 </div>
                 <div class="detail-field-edit">
+                    <label>Email</label>
+                    <input id="de-email" type="email" value="${escapeHtml(contact.email || '')}">
+                </div>
+                <div class="detail-field-edit">
                     <label>Google Maps Link</label>
                     <input id="de-clinic_google" value="${escapeHtml(contact.clinic_google || '')}">
                 </div>
@@ -1570,6 +1789,7 @@ function renderTasksDetail() {
             ${notesHtml}
             ${categoryHtml}
             ${historyHtml}
+            ${renderDetailTemplatesSection(id)}
         `;
     } else {
         // ── READ MODE ────────────────────────────────────────────────────
@@ -1588,12 +1808,14 @@ function renderTasksDetail() {
                 <div class="detail-field"><strong>Owner / Name</strong><span>${escapeHtml(contact.name || '—')}</span></div>
                 <div class="detail-field"><strong>Clinic Phone</strong><span>${escapeHtml(contact.clinic_phone || '—')}</span></div>
                 <div class="detail-field"><strong>WhatsApp</strong><span>${escapeHtml(contact.phone || '—')}</span></div>
+                <div class="detail-field"><strong>Email</strong><span>${escapeHtml(contact.email || '—')}</span></div>
                 <div class="detail-field"><strong>Address</strong><span>${escapeHtml(contact.clinic_address || '—')}</span></div>
                 <div class="detail-field"><strong>Scheduled Date</strong><span>${escapeHtml(contact.scheduledDate || '—')}</span></div>
             </div>
             ${notesHtml}
             ${categoryHtml}
             ${historyHtml}
+            ${renderDetailTemplatesSection(id)}
         `;
     }
 
@@ -1662,6 +1884,7 @@ window.saveDetailEdits = function(id) {
         name: 'de-name',
         clinic_phone: 'de-clinic_phone',
         phone: 'de-phone',
+        email: 'de-email',
         clinic_address: 'de-clinic_address',
         clinic_google: 'de-clinic_google'
     };
@@ -1677,6 +1900,7 @@ window.saveDetailEdits = function(id) {
             name: contact.name,
             clinic_phone: contact.clinic_phone,
             phone: contact.phone,
+            email: contact.email,
             clinic_address: contact.clinic_address,
             clinic_google: contact.clinic_google,
             notes: contact.notes,
@@ -1749,7 +1973,7 @@ function setupEventListeners() {
     document.getElementById('savePositionBtn')?.addEventListener('click', savePosition);
 
     // Global settings auto-save
-    const settingsInputs = ['phone', 'name', 'owner_name', 'clinic_name', 'clinic_phone', 'clinic_google', 'clinic_address', 'notes', 'follow_up_notes'];
+    const settingsInputs = ['phone', 'name', 'owner_name', 'clinic_name', 'clinic_phone', 'email', 'clinic_google', 'clinic_address', 'notes', 'follow_up_notes'];
     settingsInputs.forEach(key => {
         elements[key]?.addEventListener('input', (e) => {
             updateGlobalSetting(key, e.target.value);
