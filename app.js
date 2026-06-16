@@ -88,6 +88,7 @@ let tasksDetailBackView = 'day';
 let tasksDetailEditMode = false;
 let tasksLastContactByCategory = {};
 let tasksLastContactFromCalendar = null;
+let tasksLastContactByDate = {};
 let scheduledDatePicker = null;
 let currentContactScheduledDate = null;
 let currentContactCategory = null;
@@ -789,6 +790,7 @@ async function savePosition(silent = true) {
         tasksDetailBackView,
         tasksLastContactByCategory,
         tasksLastContactFromCalendar,
+        tasksLastContactByDate,
         tasksCalYear,
         tasksCalMonth
     };
@@ -823,6 +825,9 @@ function restorePosition() {
         }
         if (pos.tasksLastContactFromCalendar) {
             tasksLastContactFromCalendar = pos.tasksLastContactFromCalendar;
+        }
+        if (pos.tasksLastContactByDate) {
+            tasksLastContactByDate = pos.tasksLastContactByDate;
         }
 
         // Switch to the saved tab
@@ -1604,6 +1609,18 @@ function renderCalendar() {
 
 window.openDayView = function(isoDate) {
     tasksDayViewDate = isoDate;
+
+    // If there's a last contact for this date, jump straight to its detail
+    const lastId = tasksLastContactByDate[isoDate];
+    if (lastId) {
+        const contact = savedContacts.find(c => c.id === lastId && c.scheduledDate === isoDate);
+        if (contact) {
+            openTasksDetail(contact.id, 'day');
+            savePosition();
+            return;
+        }
+    }
+
     showTasksSubView('day');
     renderDayView();
     savePosition();
@@ -1706,9 +1723,10 @@ window.openTasksDetail = function(id, backView) {
         }
     }
 
-    // Track last contact viewed via calendar path
+    // Track last contact viewed via calendar path (overall + per-date)
     if (tasksDetailBackView === 'day') {
         tasksLastContactFromCalendar = id;
+        if (tasksDayViewDate) tasksLastContactByDate[tasksDayViewDate] = id;
     }
 
     showTasksSubView('detail');
@@ -1990,6 +2008,7 @@ window.navigateDetailContact = function(dir) {
             tasksLastContactByCategory[tasksCurrentCat] = tasksDetailContactId;
         } else if (tasksDetailBackView === 'day') {
             tasksLastContactFromCalendar = tasksDetailContactId;
+            if (tasksDayViewDate) tasksLastContactByDate[tasksDayViewDate] = tasksDetailContactId;
         }
         savePosition();
         renderTasksDetail();
@@ -2134,6 +2153,15 @@ function setupEventListeners() {
         if (e.key === 'Escape' && elements.modalOverlay.classList.contains('active')) {
             closeModal();
         }
+    });
+
+    // Arrow keys navigate contacts in detail view (skip when typing in inputs)
+    document.addEventListener('keydown', (e) => {
+        const tag = document.activeElement?.tagName;
+        if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+        if (document.getElementById('tasks-detail-view')?.style.display === 'none') return;
+        if (e.key === 'ArrowLeft') { e.preventDefault(); window.navigateDetailContact(-1); }
+        else if (e.key === 'ArrowRight') { e.preventDefault(); window.navigateDetailContact(1); }
     });
 
     // Add file button
