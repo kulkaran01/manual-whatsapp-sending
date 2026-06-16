@@ -86,9 +86,14 @@ let tasksDayViewDate = null;
 let tasksDetailContactId = null;
 let tasksDetailBackView = 'day';
 let tasksDetailEditMode = false;
+let tasksLastContactByCategory = {};
+let tasksLastContactFromCalendar = null;
 let scheduledDatePicker = null;
 let currentContactScheduledDate = null;
 let currentContactCategory = null;
+
+// ... (skipping defaultTemplates for brevity in my thought, but I must provide the FULL replacement string)
+
 
 // Default Templates - RCT (Low Pain / Sensitivity Case)
 const defaultTemplates = [
@@ -435,6 +440,7 @@ function updateGlobalSetting(key, value) {
         if (contact) contact[key] = value;
     }
     saveToStorage();
+    savePosition();
 }
 
 // Contact Functions
@@ -494,6 +500,7 @@ function saveContact() {
     }
 
     saveToStorage();
+    savePosition();
     renderContacts();
 }
 
@@ -523,6 +530,7 @@ function loadContact(id) {
 
     populateFormFromSettings();
     saveToStorage();
+    savePosition();
     renderContacts();
     showToast('Contact loaded');
 }
@@ -563,6 +571,7 @@ function clearForm() {
         scheduledDatePicker.setDate('', false);
     }
     saveToStorage();
+    savePosition();
     renderContacts();
 }
 
@@ -762,38 +771,60 @@ function showToast(message) {
 
 // ─── Save / Restore Position ─────────────────────────────────────────────────
 
-async function savePosition() {
+const UI_POS_KEY = 'df-ui-position';
+
+async function savePosition(silent = true) {
     const activeTab = document.querySelector('.tab-btn.active')?.dataset.tab || 'whatsapp';
 
     let tasksSubView = 'category';
     if (document.getElementById('tasks-day-view')?.style.display !== 'none') tasksSubView = 'day';
     if (document.getElementById('tasks-detail-view')?.style.display !== 'none') tasksSubView = 'detail';
 
-    uiPosition = {
+    const pos = {
         tab: activeTab,
         tasksSubView,
         tasksCurrentCat,
         tasksDayViewDate,
         tasksDetailContactId,
-        tasksDetailBackView
+        tasksDetailBackView,
+        tasksLastContactByCategory,
+        tasksLastContactFromCalendar,
+        tasksCalYear,
+        tasksCalMonth
     };
 
+    // Primary: save to localStorage instantly (device-specific, no network)
+    try { localStorage.setItem(UI_POS_KEY, JSON.stringify(pos)); } catch(e) {}
+
+    // Backup: keep server-side copy for cross-device fallback
+    uiPosition = pos;
     await saveToStorage();
 
-    // Brief visual feedback on the button
-    const btn = document.getElementById('savePositionBtn');
-    if (btn) {
-        btn.classList.add('saved');
-        setTimeout(() => btn.classList.remove('saved'), 1500);
+    if (!silent) {
+        showToast('Position saved!');
     }
-    showToast('Position saved!');
 }
 
 function restorePosition() {
-    const pos = uiPosition;
+    // Try localStorage first (device-specific, most recent)
+    let pos = null;
+    try {
+        const stored = localStorage.getItem(UI_POS_KEY);
+        if (stored) pos = JSON.parse(stored);
+    } catch(e) {}
+
+    // Fall back to server-side position (cross-device)
+    if (!pos) pos = uiPosition;
     if (!pos) return;
 
     try {
+        if (pos.tasksLastContactByCategory) {
+            tasksLastContactByCategory = pos.tasksLastContactByCategory;
+        }
+        if (pos.tasksLastContactFromCalendar) {
+            tasksLastContactFromCalendar = pos.tasksLastContactFromCalendar;
+        }
+
         // Switch to the saved tab
         if (pos.tab) {
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -810,6 +841,9 @@ function restorePosition() {
             tasksDayViewDate = pos.tasksDayViewDate || null;
             tasksDetailContactId = pos.tasksDetailContactId || null;
             tasksDetailBackView = pos.tasksDetailBackView || 'day';
+
+            if (pos.tasksCalYear) tasksCalYear = pos.tasksCalYear;
+            if (pos.tasksCalMonth !== undefined) tasksCalMonth = pos.tasksCalMonth;
 
             renderTasksView();
 
@@ -1247,6 +1281,7 @@ function setupTabNavigation() {
             if (tab === 'tasks') {
                 renderTasksView();
             }
+            savePosition();
         });
     });
 }
@@ -1356,6 +1391,7 @@ function showTasksSubView(view) {
         const el = document.getElementById('tasks-' + v + '-view');
         if (el) el.style.display = v === view ? '' : 'none';
     });
+    savePosition();
 }
 
 function renderCategorySelector() {
@@ -1378,7 +1414,11 @@ function renderCategorySelector() {
 
     // Built-in OTHER category
     const otherActive = tasksCurrentCat === 'OTHER';
-    html += `<button class="category-btn ${otherActive ? 'active' : ''}" onclick="selectTasksCategory('OTHER')">OTHER</button>`;
+    html += `
+    <span class="category-btn-wrap">
+        <button class="category-btn ${otherActive ? 'active' : ''}" onclick="selectTasksCategory('OTHER')">OTHER</button>
+        <button class="cat-list-btn" onclick="event.stopPropagation(); showCategoryListFor('OTHER')" title="View all contacts in OTHER">☰</button>
+    </span>`;
 
     globalCategories.forEach(cat => {
         const isActive = tasksCurrentCat === cat;
@@ -1386,6 +1426,7 @@ function renderCategorySelector() {
         html += `
         <span class="category-btn-wrap">
             <button class="category-btn ${isActive ? 'active' : ''}" onclick="selectTasksCategory('${catEsc}')">${catEsc}</button>
+            <button class="cat-list-btn" onclick="event.stopPropagation(); showCategoryListFor('${catEsc}')" title="View all contacts in ${catEsc}">☰</button>
             <span class="cat-delete-x" onclick="event.stopPropagation(); deleteCategory('${catEsc}')" title="Delete category">✕</span>
         </span>`;
     });
@@ -1393,15 +1434,61 @@ function renderCategorySelector() {
     container.innerHTML = html;
 }
 
-window.selectTasksCategory = function(cat) {
+window.showCategoryListFor = function(cat) {
     tasksCurrentCat = cat;
     renderCategorySelector();
     showTasksSubView('category');
+    showCategoryList();
+};
+
+window.selectTasksCategory = function(cat) {
+    tasksCurrentCat = cat;
+    renderCategorySelector();
+
     if (cat === '__calendar__') {
+        // If there's a last contact viewed via calendar, jump straight to it
+        if (tasksLastContactFromCalendar) {
+            const contact = savedContacts.find(c => c.id === tasksLastContactFromCalendar);
+            if (contact) {
+                if (contact.scheduledDate) tasksDayViewDate = contact.scheduledDate;
+                openTasksDetail(contact.id, 'day');
+                savePosition();
+                return;
+            }
+        }
+        showTasksSubView('category');
         showCalendar();
     } else {
-        showCategoryList();
+        // Try last contact first, then fall back to first contact in category
+        const lastContactId = tasksLastContactByCategory[cat];
+        let contact = lastContactId ? savedContacts.find(c => c.id === lastContactId) : null;
+
+        // Validate last contact still belongs to this category
+        if (contact) {
+            const belongs = cat === 'OTHER'
+                ? (!contact.category || contact.category === 'OTHER')
+                : contact.category === cat;
+            if (!belongs) contact = null;
+        }
+
+        // Fall back to first contact in this category (skip the list view)
+        if (!contact) {
+            contact = savedContacts.find(c =>
+                cat === 'OTHER'
+                    ? (!c.category || c.category === 'OTHER')
+                    : c.category === cat
+            );
+        }
+
+        if (contact) {
+            openTasksDetail(contact.id, 'category');
+        } else {
+            // Category is empty – show empty state
+            showTasksSubView('category');
+            showCategoryList();
+        }
     }
+    savePosition();
 };
 
 window.deleteCategory = function(cat) {
@@ -1505,11 +1592,13 @@ function renderCalendar() {
         tasksCalMonth--;
         if (tasksCalMonth < 0) { tasksCalMonth = 11; tasksCalYear--; }
         renderCalendar();
+        savePosition();
     });
     document.getElementById('calNextMonth')?.addEventListener('click', () => {
         tasksCalMonth++;
         if (tasksCalMonth > 11) { tasksCalMonth = 0; tasksCalYear++; }
         renderCalendar();
+        savePosition();
     });
 }
 
@@ -1517,6 +1606,7 @@ window.openDayView = function(isoDate) {
     tasksDayViewDate = isoDate;
     showTasksSubView('day');
     renderDayView();
+    savePosition();
 };
 
 function renderDayView() {
@@ -1603,8 +1693,27 @@ window.openTasksDetail = function(id, backView) {
     tasksDetailContactId = id;
     tasksDetailBackView = backView || 'day';
     tasksDetailEditMode = false;
+
+    // Track last contact per navigation path
+    if (tasksDetailBackView === 'category' && tasksCurrentCat) {
+        tasksLastContactByCategory[tasksCurrentCat] = id;
+    } else {
+        const contact = savedContacts.find(c => c.id === id);
+        if (contact && contact.category) {
+            tasksLastContactByCategory[contact.category] = id;
+        } else if (contact && !contact.category) {
+            tasksLastContactByCategory['OTHER'] = id;
+        }
+    }
+
+    // Track last contact viewed via calendar path
+    if (tasksDetailBackView === 'day') {
+        tasksLastContactFromCalendar = id;
+    }
+
     showTasksSubView('detail');
     renderTasksDetail();
+    savePosition();
 };
 
 function renderDetailTemplatesSection(contactId) {
@@ -1876,6 +1985,13 @@ window.navigateDetailContact = function(dir) {
     if (next >= 0 && next < list.length) {
         tasksDetailContactId = list[next].id;
         tasksDetailEditMode = false;
+        // Keep "last viewed" tracking in sync as user navigates
+        if (tasksDetailBackView === 'category' && tasksCurrentCat) {
+            tasksLastContactByCategory[tasksCurrentCat] = tasksDetailContactId;
+        } else if (tasksDetailBackView === 'day') {
+            tasksLastContactFromCalendar = tasksDetailContactId;
+        }
+        savePosition();
         renderTasksDetail();
     }
 };
@@ -1981,9 +2097,6 @@ window.promptAddCategoryFromDetail = function(contactId) {
 
 // Event Listeners
 function setupEventListeners() {
-    // Save position button
-    document.getElementById('savePositionBtn')?.addEventListener('click', savePosition);
-
     // Global settings auto-save
     const settingsInputs = ['phone', 'name', 'owner_name', 'clinic_name', 'clinic_phone', 'email', 'clinic_google', 'clinic_address', 'notes', 'follow_up_notes'];
     settingsInputs.forEach(key => {
@@ -2105,12 +2218,22 @@ function setupEventListeners() {
 
     // Tasks tab: detail view back
     document.getElementById('tasksDetailBack')?.addEventListener('click', () => {
-        showTasksSubView(tasksDetailBackView);
-        if (tasksDetailBackView === 'day') {
-            renderDayView();
+        if (tasksDetailBackView === 'category') {
+            tasksDetailContactId = null;
+            showTasksSubView('category');
+            // Show only category selector — list is accessed via ☰ button
+            document.getElementById('tasks-category-list-container').style.display = 'none';
+            document.getElementById('tasks-calendar-container').style.display = 'none';
+            renderCategorySelector(); // keep current category highlighted
         } else {
-            renderCategoryContactList(tasksCurrentCat);
+            showTasksSubView(tasksDetailBackView);
+            if (tasksDetailBackView === 'day') {
+                renderDayView();
+            } else {
+                renderCategoryContactList(tasksCurrentCat);
+            }
         }
+        savePosition();
     });
 
     // Add category button in tasks header
