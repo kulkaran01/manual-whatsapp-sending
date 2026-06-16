@@ -2253,13 +2253,19 @@ function setupEventListeners() {
             document.getElementById('tasks-category-list-container').style.display = 'none';
             document.getElementById('tasks-calendar-container').style.display = 'none';
             renderCategorySelector(); // keep current category highlighted
+        } else if (tasksDetailBackView === 'day') {
+            // Go back to calendar, not the day contact list
+            tasksDetailContactId = null;
+            tasksCurrentCat = '__calendar__';
+            showTasksSubView('category');
+            document.getElementById('tasks-category-list-container').style.display = 'none';
+            renderCategorySelector();
+            showCalendar();
         } else {
-            showTasksSubView(tasksDetailBackView);
-            if (tasksDetailBackView === 'day') {
-                renderDayView();
-            } else {
-                renderCategoryContactList(tasksCurrentCat);
-            }
+            showTasksSubView('category');
+            document.getElementById('tasks-calendar-container').style.display = 'none';
+            renderCategorySelector();
+            renderCategoryContactList(tasksCurrentCat);
         }
         savePosition();
     });
